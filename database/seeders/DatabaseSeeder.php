@@ -31,21 +31,19 @@ class DatabaseSeeder extends Seeder
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         $permissions = [
-            'access admin panel',
             'administrate users',
             'administrate responses',
             'administrate deals',
             'administrate points_of_interest',
             'administrate products',
             'administrate title_photos',
-            'administrate deals',
             'manage business staff',
-            'manage business deals',
             'manage business points_of_interest',
             'manage business products',
             'manage business title_photos',
             'manage business deals',
             'get business statistics',
+            'get own statistics',
             'manage own responses',
             'manage own deals',
             'update own settings',
@@ -82,7 +80,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $business_manager->givePermissionTo([
             'manage business staff',
-            'manage business deals',
             'manage business points_of_interest',
             'manage business products',
             'manage business title_photos',
