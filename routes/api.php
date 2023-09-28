@@ -24,7 +24,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::get('/logout', [AuthController::class, 'logout']);
 
-    Route::group(['middleware' => ['role:admin']], function () {
+    Route::group(['middleware' => ['role:administrator']], function () {
         Route::post('/filter_users',[UserController::class, 'filter']);
         Route::post('/filter_comments',[CommentController::class, 'filter']);
         Route::post('/filter_deals',[DealsController::class, 'filter']);
@@ -34,7 +34,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/filter_prepurchases',[DealsController::class, 'filterPrePurchases']);
     });
 
-    Route::group(['middleware' => ['role:admin|business_manager|user']], function () {
+    Route::group(['middleware' => ['role:administrator|business_manager|user']], function () {
         Route::apiResource('comments',CommentController::class);
         Route::apiResource('users',UserController::class);
         Route::apiResource('deals',DealsController::class);
