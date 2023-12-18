@@ -178,15 +178,7 @@ class UserController extends Controller
             'is_reservation_info_allowed' => 'sometimes|nullable|boolean',
         ]);
 
-        $updateData = [];
-
-        foreach ($validated as $key => $value) {
-            if ($value) {
-                $updateData[$key] = $value;
-            }
-        }
-
-        auth()->user()->update($updateData);
+        auth()->user()->update($validated);
 
         return response()->json([
             'data' => new UserResource(auth()->user())

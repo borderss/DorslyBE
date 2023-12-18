@@ -26,17 +26,12 @@ class DealsRequest extends FormRequest
         return [
             'user_id' => 'required|integer',
             'point_of_interest_id' => 'required|integer',
-
-            // products
             'products' => 'required|array',
             'products.*.id' => 'required|integer',
             'products.*.quantity' => 'required|integer',
-
-            // reservation
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
             'number_of_people' => 'required|integer',
-
             'type' => 'required',
             'prices' => 'required',
             'status' => 'required',
