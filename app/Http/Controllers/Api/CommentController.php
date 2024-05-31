@@ -7,6 +7,7 @@ use App\Http\Requests\CommmentRequest;
 use App\Http\Resources\CommentResourse;
 use App\Http\Resources\FilterCommentResourse;
 use App\Http\Resources\UserCommentResource;
+use App\Models\BusinessOwner;
 use App\Models\Comment;
 use App\Models\PointOfInterest;
 use Illuminate\Http\Request;
@@ -122,7 +123,7 @@ class CommentController extends Controller
         return new CommentResourse($comment);
     }
 
-    public function filter(Request $request)
+    public function filterComments(Request $request)
     {
         $validated = $request->validate([
             'by'=>'required',
@@ -130,8 +131,9 @@ class CommentController extends Controller
             'paginate'=>'required|integer'
         ]);
 
+
         if ($validated['by'] == 'all'){
-            $users = Comment::where('id', "LIKE", "%{$validated['value']}%")
+            $comment = Comment::where('id', "LIKE", "%{$validated['value']}%")
                 ->orWhere('user_id', "LIKE", "%{$validated['value']}%")
                 ->orWhere('point_of_interest_id', "LIKE", "%{$validated['value']}%")
                 ->orWhere('text', "LIKE", "%{$validated['value']}%")
@@ -139,9 +141,41 @@ class CommentController extends Controller
                 ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
                 ->paginate($validated['paginate']);
         } else {
-            $users = Comment::where($validated['by'], "LIKE", "%{$validated['value']}%")->paginate($validated['paginate']);
+            $comment = Comment::where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->paginate($validated['paginate']);
         }
 
-        return FilterCommentResourse::collection($users);
+        return FilterCommentResourse::collection($comment);
+    }
+
+    public function filterBusinessComments(Request $request)
+    {
+        $validated = $request->validate([
+            'by'=>'required',
+            'value'=>'required',
+            'paginate'=>'required|integer'
+        ]);
+
+
+        $ownerPOI = BusinessOwner::where('user_id', Auth::user()->id)->first()->point_of_interest_id;
+
+        if ($validated['by'] == 'all'){
+            $comment = Comment::having('point_of_interest_id', '=', $ownerPOI)
+                ->where('id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('user_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('point_of_interest_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('text', "LIKE", "%{$validated['value']}%")
+                ->orWhere('created_at', "LIKE", "%{$validated['value']}%")
+                ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
+        } else {
+            $comment = Comment::having('point_of_interest_id', '=', $ownerPOI)
+                ->where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
+        }
+
+        return FilterCommentResourse::collection($comment);
     }
 }

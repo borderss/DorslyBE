@@ -6,15 +6,11 @@ use App\Models\Deal;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\URL;
 
+/** @mixin \App\Models\Deal */
 class DealsResourse extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
-     */
     public function toArray($request)
     {
         $poi = $this->pointOfInterest;
@@ -27,7 +23,7 @@ class DealsResourse extends JsonResource
                 'id' => $this->point_of_interest_id,
                 'name' => $poi->name,
                 'description' => $poi->description,
-                'images' => $poi->images,
+                'images' => URL::signedRoute('point_of_interest.images',['point_of_interest' => $poi->id]),
             ],
             'reservation' => [
                 'id' => $this->pointOfInterest,

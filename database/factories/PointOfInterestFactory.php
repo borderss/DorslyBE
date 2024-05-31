@@ -33,12 +33,12 @@ class PointOfInterestFactory extends Factory
         }
 
         return[
-            'name' => $this->faker->name(),
+            'name' => $this->faker->company(),
             'description' => $this->faker->text($maxNbChars = 200),
-            'gps_lng' => $this->faker->longitude($min = -180, $max = 180),
-            'gps_lat' => $this->faker->latitude($min = -90, $max = 90),
+            'gps_lng' => $this->faker->longitude(),
+            'gps_lat' => $this->faker->latitude(50, 50),
             'country' => $this->faker->country(),
-            'images' => $this->faker->imageUrl(1920, 1080, 'food'),
+            'images' => 'poi_image.jpg',
             'opens_at' => $opens_at,
             'closes_at' => $closes_at,
             'is_open_round_the_clock' => $round_the_clock,

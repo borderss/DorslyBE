@@ -12,11 +12,6 @@ class Comment extends Model
         'point_of_interest_id',
         'text',
     ];
-
-    protected $user_id = "";
-    protected $point_of_interest_id = "";
-    protected $text = "";
-
     public function PointOfInterest(){
         return $this->belongsTo(PointOfInterest::class ,'point_of_interest_id');
     }

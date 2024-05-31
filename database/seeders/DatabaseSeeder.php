@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\BusinessOwner;
 use App\Models\Comment;
 use App\Models\Deal;
 use App\Models\PointOfInterest;
@@ -156,7 +157,7 @@ class DatabaseSeeder extends Seeder
 
 
         User::factory(133)->create();
-        PointOfInterest::factory(150)->create();
+        PointOfInterest::factory(650)->create();
         Product::factory(550)->create();
         Rating::factory(1450)->create();
         Comment::factory(120)->create();
@@ -170,5 +171,10 @@ class DatabaseSeeder extends Seeder
 
             return $point;
         });
+
+        BusinessOwner::create([
+            'point_of_interest_id' => 1,
+            'user_id' => 3,
+        ]);
     }
 }

@@ -4,24 +4,28 @@ namespace App\Http\Resources;
 
 use App\Models\PointOfInterest;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\URL;
 
+/** @mixin \App\Models\Product */
 class ProductResourse extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
-     */
     public function toArray($request)
     {
-        return[
+        $asd = '';
+
+        try {
+            $asd = URL::signedRoute('product.image',['product' => $this->id]);
+        } catch (\Exception $e) {
+            $asd = $this->image;
+        }
+
+        return [
             'id' => $this->id,
             'name'=>$this->name,
             'description' => $this->description,
             'point_of_interest_id' => $this->PointOfInterest->id,
             'ingredients' => $this->ingredients,
-            'image' => $this->image,
+            'image' => $asd,
             'price' => $this->price,
         ];
     }

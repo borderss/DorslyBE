@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RatingRequest;
-use App\Http\Resources\RatingResourse;
+use App\Http\Resources\RatingResource;
 use App\Http\Resources\UserRatingResource;
 use App\Models\Deal;
 use App\Models\PointOfInterest;
@@ -48,14 +48,14 @@ class RatingController extends Controller
      */
     public function index()
     {
-        return RatingResourse::collection(Rating::all());
+        return RatingResource::collection(Rating::all());
     }
 
     /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return RatingResourse
+     * @return RatingResource
      */
     public function store(RatingRequest $request)
     {
@@ -113,11 +113,11 @@ class RatingController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return RatingResourse
+     * @return RatingResource
      */
     public function show($id)
     {
-        return new RatingResourse(Rating::find($id));
+        return new RatingResource(Rating::find($id));
     }
 
     /**
@@ -125,7 +125,7 @@ class RatingController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return RatingResourse
+     * @return RatingResource
      */
     public function update(RatingRequest $request, $id)
     {
@@ -137,14 +137,14 @@ class RatingController extends Controller
 
         Rating::find($id)->update($request->validated());
 
-        return new RatingResourse(Rating::find($id));
+        return new RatingResource(Rating::find($id));
     }
 
     /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return RatingResourse
+     * @return RatingResource
      */
     public function destroy($id)
     {
@@ -156,6 +156,6 @@ class RatingController extends Controller
 
         $rating = Rating::find($id);
         $rating->delete();
-        return new RatingResourse($rating);
+        return new RatingResource($rating);
     }
 }
