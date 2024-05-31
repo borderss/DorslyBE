@@ -32,7 +32,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index()
     {
@@ -54,7 +54,7 @@ class UserController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return UserResource
      */
     public function show($id)
     {
@@ -66,7 +66,7 @@ class UserController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, $id)
     {
@@ -109,7 +109,7 @@ class UserController extends Controller
 
     }
 
-    public function filter(Request $request)
+    public function filterUsers(Request $request)
     {
         $validated = $request->validate([
             'by'=>'required',
@@ -201,6 +201,18 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Account deleted successfully',
         ]);
+    }
 
+    public function setUserLocation(Request $request){
+        $validated = $request->validate([
+            'gps_lng' => 'required',
+            'gps_lat' => 'required',
+        ]);
+
+        auth()->user()->update($validated);
+
+        return response()->json([
+            'message' => 'Location updated successfully',
+        ]);
     }
 }

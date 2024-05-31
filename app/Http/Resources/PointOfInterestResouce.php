@@ -5,14 +5,9 @@ namespace App\Http\Resources;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\URL;
 
+/** @mixin \App\Models\PointOfInterest */
 class PointOfInterestResouce extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
-     */
     public function toArray($request)
     {
         return[
@@ -21,6 +16,7 @@ class PointOfInterestResouce extends JsonResource
             'description' => $this->description,
             'gps_lng' => $this->gps_lng,
             'gps_lat' => $this->gps_lat,
+            'distance' => $this->distance ?? null,
             'country' => $this->country,
             'images' => URL::signedRoute('point_of_interest.images',['point_of_interest' => $this->id]),
             'opens_at' => $this->opens_at,

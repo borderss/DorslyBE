@@ -7,7 +7,7 @@ use App\Http\Requests\PointOfInterestRequest;
 use App\Http\Resources\CommentResourse;
 use App\Http\Resources\PointOfInterestResouce;
 use App\Http\Resources\ProductResourse;
-use App\Http\Resources\RatingResourse;
+use App\Http\Resources\RatingResource;
 use App\Models\Comment;
 use App\Models\PointOfInterest;
 use App\Models\Product;
@@ -20,6 +20,23 @@ use mysql_xdevapi\Collection;
 
 class PointOfInterestController extends Controller
 {
+    private function haversineDistance(
+        $latitudeFrom, $longitudeFrom, $latitudeTo, $longitudeTo, $earthRadius = 6378100)
+    {
+        // convert from degrees to radians
+        $latFrom = deg2rad($latitudeFrom);
+        $lonFrom = deg2rad($longitudeFrom);
+        $latTo = deg2rad($latitudeTo);
+        $lonTo = deg2rad($longitudeTo);
+
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
+                cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+        return $angle * $earthRadius;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -58,6 +75,24 @@ class PointOfInterestController extends Controller
             ->sortByDesc('avgRating')
             ->take(8);
         return PointOfInterestResouce::collection($pointsOfInterests);
+    }
+
+    public function getNearestSelection(Request $request)
+    {
+        $validated = $request->validate([
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
+        ]);
+
+        $pointsOfInterest = PointOfInterest::all()
+            ->map(function ($point) use ($validated) {
+                $point['distance'] = $this->haversineDistance($point->gps_lat, $point->gps_lng, $validated['lat'], $validated['lng']);
+                return $point;
+            })
+            ->sortBy('distance')
+            ->take(8);
+
+        return PointOfInterestResouce::collection($pointsOfInterest);
     }
 
     /**
@@ -105,8 +140,21 @@ class PointOfInterestController extends Controller
      * @param  int  $id
      * @return PointOfInterestResouce
      */
-    public function update(PointOfInterestRequest $request, $id)
+    public function update(Request $request, $id)
     {
+        $validated = $request->validate([
+            'name' =>'required',
+            'description' =>'required',
+            'gps_lng' =>'required',
+            'gps_lat' =>'required',
+            'country' =>'required',
+            'is_open_round_the_clock' =>'required',
+            'is_takeaway' =>'required',
+            'is_on_location' =>'required',
+            'available_seats' =>'required',
+            'review_count' =>'required',
+        ]);
+
         if (auth()->user()->is_admin === false){
             return response()->json([
                 'message' => 'You are not authorized to do this action'
@@ -114,7 +162,6 @@ class PointOfInterestController extends Controller
         }
 
         $Point = PointOfInterest::find($id);
-        $validated = $request->validated();
         if($request->hasFile('images')){
             $Point->images= Storage::disk('local')->delete('public/point_of_interest_photo/'.$Point->images);
             $image = $validated['images'];
@@ -130,7 +177,7 @@ class PointOfInterestController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return PointOfInterestResouce
+     * @return PointOfInterestResouce | \Illuminate\Http\JsonResponse
      */
     public function destroy($id)
     {
@@ -153,7 +200,7 @@ class PointOfInterestController extends Controller
         return response()->file($pointPhoto->images);
     }
 
-    public function filter(Request $request)
+    public function filterPointsOfInterest(Request $request)
     {
         if (auth()->user()->is_admin === false){
             return response()->json([
@@ -168,7 +215,7 @@ class PointOfInterestController extends Controller
         ]);
 
         if ($validated['by'] == 'all'){
-            $users = PointOfInterest::where('id', 'LIKE', "%{$validated['value']}%")
+            $pointsOfInterest = PointOfInterest::where('id', 'LIKE', "%{$validated['value']}%")
                 ->orWhere('name', 'LIKE', "%{$validated['value']}%")
                 ->orWhere('description', 'LIKE', "%{$validated['value']}%")
                 ->orWhere('gps_lng', 'LIKE', "%{$validated['value']}%")
@@ -183,10 +230,10 @@ class PointOfInterestController extends Controller
                 ->orWhere('review_count', 'LIKE', "%{$validated['value']}%")
                 ->paginate($validated['paginate']);
         }  else {
-            $users = PointOfInterest::where($validated['by'], 'LIKE', "%{$validated['value']}%")->paginate($validated['paginate']);
+            $pointsOfInterest = PointOfInterest::where($validated['by'], 'LIKE', "%{$validated['value']}%")->paginate($validated['paginate']);
         }
 
-        return PointOfInterestResouce::collection($users);
+        return PointOfInterestResouce::collection($pointsOfInterest);
     }
 
     public function getComments($id) {

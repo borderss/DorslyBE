@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResourse;
+use App\Models\BusinessOwner;
 use App\Models\Product;
+use App\Models\TitlePhotos;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -35,6 +39,29 @@ class ProductController extends Controller
         }
 
         $product = Product::create($request->validated());
+
+        return new ProductResourse($product);
+    }
+
+    public function storeForBusinessOwner(Request $request)
+    {
+        $request->validate([
+            'name' =>'required',
+            'description' =>'required',
+            'ingredients' =>'required',
+            'price' =>'required',
+            'image' =>'required',
+        ]);
+
+        $ownerPOI = BusinessOwner::where('user_id', Auth::user()->id)->first()->point_of_interest_id;
+        $request['point_of_interest_id'] = $ownerPOI;
+        $product = Product::create($request->all());
+
+        $image = $request->file('image');
+        $imageName = $image->hashName();
+        $image->store('public/product_photo/');
+        $product->image = $imageName;
+        $product->save();
 
         return new ProductResourse($product);
     }
@@ -89,14 +116,8 @@ class ProductController extends Controller
         return new ProductResourse($product);
     }
 
-    public function filter(Request $request)
+    public function filterProducts(Request $request)
     {
-        if (auth()->user()->is_admin === false){
-            return response()->json([
-                'message' => 'You are not authorized to do this action'
-            ], 403);
-        }
-
         $validated = $request->validate([
             'by'=>'required',
             'value'=>'required',
@@ -104,7 +125,7 @@ class ProductController extends Controller
         ]);
 
         if ($validated['by'] == 'all'){
-            $users = Product::where('id', "LIKE", "%{$validated['value']}%")
+            $product = Product::where('id', "LIKE", "%{$validated['value']}%")
                 ->orWhere('name', "LIKE", "%{$validated['value']}%")
                 ->orWhere('description', "LIKE", "%{$validated['value']}%")
                 ->orWhere('point_of_interest_id', "LIKE", "%{$validated['value']}%")
@@ -114,9 +135,50 @@ class ProductController extends Controller
                 ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
                 ->paginate($validated['paginate']);
         } else {
-            $users = Product::where($validated['by'], "LIKE", "%{$validated['value']}%")->paginate($validated['paginate']);
+            $product = Product::where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->paginate($validated['paginate']);
         }
 
-        return ProductResourse::collection($users);
+        return ProductResourse::collection($product);
+    }
+
+    public function filterBusinessProducts(Request $request)
+    {
+        $validated = $request->validate([
+            'by'=>'required',
+            'value'=>'required',
+            'paginate'=>'required|integer'
+        ]);
+
+        $ownerPOI = BusinessOwner::where('user_id', Auth::user()->id)->first()->point_of_interest_id;
+
+        if ($validated['by'] == 'all'){
+            $product = Product::having('point_of_interest_id', '=', $ownerPOI)
+                ->where('id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('name', "LIKE", "%{$validated['value']}%")
+                ->orWhere('description', "LIKE", "%{$validated['value']}%")
+                ->orWhere('point_of_interest_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('ingredients', "LIKE", "%{$validated['value']}%")
+                ->orWhere('price', "LIKE", "%{$validated['value']}%")
+                ->orWhere('created_at', "LIKE", "%{$validated['value']}%")
+                ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
+        } else {
+            $product = Product::having('point_of_interest_id', '=', $ownerPOI)
+                ->where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
+        }
+
+        return ProductResourse::collection($product);
+    }
+
+    public function getFile(Request $request, $id){
+        if(!$request->hasValidSignature()) return abort(401);
+        $product = Product::find($id);
+        $product->image = Storage::disk('local')->path('public/product_photo/'.$product->image);
+
+        return response()->file($product->image);
     }
 }

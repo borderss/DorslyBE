@@ -88,8 +88,8 @@ class PrePurchaseController extends Controller
             'point_of_interest_id' => $validated['point_of_interest_id'],
             'products' => json_encode($validated['products']),
             'total_price' => $totalPrice,
-            'status' => 'pending',
-            'payment_status' => $session->status,
+            'status' => $session->status,
+            'payment_status' => $session->payment_status,
             'payment_id' => $session->id,
         ]);
 

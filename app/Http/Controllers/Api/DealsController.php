@@ -8,10 +8,12 @@ use App\Http\Resources\DealsResourse;
 use App\Http\Resources\FilterDealsResource;
 use App\Http\Resources\FilterPrePurchasesResource;
 use App\Http\Resources\FilterReservationsResource;
+use App\Models\BusinessOwner;
 use App\Models\Deal;
 use App\Models\PrePurchase;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Stripe\StripeClient;
 
 class DealsController extends Controller
@@ -27,7 +29,10 @@ class DealsController extends Controller
             if ($pre_purchase->payment_id !== null) {
                 $session = $stripe->checkout->sessions->retrieve($pre_purchase->payment_id);
 
-                $pre_purchase->update(['status' => $session->status]);
+                $pre_purchase->update([
+                    'status' => $session->status,
+                    'payment_status' => $session->payment_status,
+                ]);
             }
         }
 
@@ -172,22 +177,17 @@ class DealsController extends Controller
         ]);
     }
 
-    public function filter(Request $request)
+    public function filterDeals(Request $request)
     {
-        if (auth()->user()->is_admin === false){
-            return response()->json([
-                'message' => 'You are not authorized to do this action'
-            ], 403);
-        }
-
         $validated = $request->validate([
             'by'=>'required',
             'value'=>'required',
             'paginate'=>'required|integer'
         ]);
 
+
         if ($validated['by'] == 'all'){
-            $users = Deal::where('id', "LIKE", "%{$validated['value']}%")
+            $deal = Deal::where('id', "LIKE", "%{$validated['value']}%")
                 ->orWhere('user_id', "LIKE", "%{$validated['value']}%")
                 ->orWhere('reservation_id', "LIKE", "%{$validated['value']}%")
                 ->orWhere('pre_purchase_id', "LIKE", "%{$validated['value']}%")
@@ -196,20 +196,47 @@ class DealsController extends Controller
                 ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
                 ->paginate($validated['paginate']);
         } else {
-            $users = Deal::where($validated['by'], "LIKE", "%{$validated['value']}%")->paginate($validated['paginate']);
+            $deal = Deal::where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
         }
 
-        return FilterDealsResource::collection($users);
+        return FilterDealsResource::collection($deal);
+    }
+
+    public function filterBusinessDeals(Request $request)
+    {
+        $validated = $request->validate([
+            'by'=>'required',
+            'value'=>'required',
+            'paginate'=>'required|integer'
+        ]);
+
+        $ownerPOI = BusinessOwner::where('user_id', Auth::user()->id)->first()->point_of_interest_id;
+
+        if ($validated['by'] == 'all'){
+            $deal = Deal::having('point_of_interest_id', '=', $ownerPOI)
+                ->where('id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('user_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('reservation_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('pre_purchase_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('status', "LIKE", "%{$validated['value']}%")
+                ->orWhere('created_at', "LIKE", "%{$validated['value']}%")
+                ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
+        } else {
+            $deal = Deal::having('point_of_interest_id', '=', $ownerPOI)
+                ->where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
+        }
+
+        return FilterDealsResource::collection($deal);
     }
 
     public function filterReservations(Request $request)
     {
-        if (auth()->user()->is_admin === false){
-            return response()->json([
-                'message' => 'You are not authorized to do this action'
-            ], 403);
-        }
-
         $validated = $request->validate([
             'by'=>'required',
             'value'=>'required',
@@ -225,7 +252,38 @@ class DealsController extends Controller
                 ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
                 ->paginate($validated['paginate']);
         } else {
-            $users = Reservation::where($validated['by'], "LIKE", "%{$validated['value']}%")->paginate($validated['paginate']);
+            $users = Reservation::where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->paginate($validated['paginate']);
+        }
+
+        return FilterReservationsResource::collection($users);
+    }
+
+    public function filterBusinessReservations(Request $request)
+    {
+        $validated = $request->validate([
+            'by'=>'required',
+            'value'=>'required',
+            'paginate'=>'required|integer'
+        ]);
+
+        $ownerPOI = BusinessOwner::where('user_id', Auth::user()->id)->first()->point_of_interest_id;
+
+        if ($validated['by'] == 'all'){
+            $users = Reservation::having('point_of_interest_id', '=', $ownerPOI)
+                ->where('id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('point_of_interest_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('date', "LIKE", "%{$validated['value']}%")
+                ->orWhere('number_of_people', "LIKE", "%{$validated['value']}%")
+                ->orWhere('created_at', "LIKE", "%{$validated['value']}%")
+                ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
+        } else {
+            $users = Reservation::having('point_of_interest_id', '=', $ownerPOI)
+                ->where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
         }
 
         return FilterReservationsResource::collection($users);
@@ -233,12 +291,6 @@ class DealsController extends Controller
 
     public function filterPrePurchases(Request $request)
     {
-        if (auth()->user()->is_admin === false){
-            return response()->json([
-                'message' => 'You are not authorized to do this action'
-            ], 403);
-        }
-
         $validated = $request->validate([
             'by'=>'required',
             'value'=>'required',
@@ -256,7 +308,41 @@ class DealsController extends Controller
                 ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
                 ->paginate($validated['paginate']);
         } else {
-            $users = PrePurchase::where($validated['by'], "LIKE", "%{$validated['value']}%")->paginate($validated['paginate']);
+            $users = PrePurchase::where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->paginate($validated['paginate']);
+        }
+
+        return FilterPrePurchasesResource::collection($users);
+    }
+
+
+    public function filterBusinessPrePurchases(Request $request)
+    {
+        $validated = $request->validate([
+            'by'=>'required',
+            'value'=>'required',
+            'paginate'=>'required|integer'
+        ]);
+
+        $ownerPOI = BusinessOwner::where('user_id', Auth::user()->id)->first()->point_of_interest_id;
+
+        if ($validated['by'] == 'all'){
+            $users = PrePurchase::having('point_of_interest_id', '=', $ownerPOI)
+                ->where('id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('point_of_interest_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('total_price', "LIKE", "%{$validated['value']}%")
+                ->orWhere('status', "LIKE", "%{$validated['value']}%")
+                ->orWhere('payment_status', "LIKE", "%{$validated['value']}%")
+                ->orWhere('payment_id', "LIKE", "%{$validated['value']}%")
+                ->orWhere('created_at', "LIKE", "%{$validated['value']}%")
+                ->orWhere('updated_at', "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
+        } else {
+            $users = PrePurchase::having('point_of_interest_id', '=', $ownerPOI)
+                ->where($validated['by'], "LIKE", "%{$validated['value']}%")
+                ->groupBy('id')
+                ->paginate($validated['paginate']);
         }
 
         return FilterPrePurchasesResource::collection($users);

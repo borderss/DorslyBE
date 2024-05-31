@@ -27,6 +27,8 @@ class User extends Authenticatable
         'is_security_notices_allowed',
         'is_reservation_info_allowed',
         'is_admin',
+        'gps_lng',
+        'gps_lat',
     ];
 
     /**
