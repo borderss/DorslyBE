@@ -36,7 +36,7 @@ class PointOfInterestFactory extends Factory
             'name' => $this->faker->company(),
             'description' => $this->faker->text($maxNbChars = 200),
             'gps_lng' => $this->faker->longitude(),
-            'gps_lat' => $this->faker->latitude(50, 50),
+            'gps_lat' => $this->faker->latitude(),
             'country' => $this->faker->country(),
             'images' => 'poi_image.jpg',
             'opens_at' => $opens_at,
